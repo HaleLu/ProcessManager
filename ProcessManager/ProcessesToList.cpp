@@ -113,7 +113,7 @@ Status print(ElemType e)
 	_tprintf(TEXT("\t%s"), e.name);
 	_tprintf(TEXT("\t%.1fM"), e.memorySize * 1.0 / 1024 / 1024);
 
-	printFileTime(e.creationTime);
+//	printFileTime(e.creationTime);
 
 	SYSTEMTIME currentSystemTime;
 	GetSystemTime(&currentSystemTime);
@@ -140,18 +140,6 @@ Status print(ElemType e)
 	                                      systemTime.wMinute, systemTime.wSecond);
 
 	printf("\n\n");
-	return OK ;
-}
-
-Status printFileTime(FILETIME fileTime)
-{
-	FILETIME localTime;
-	FileTimeToLocalFileTime(&fileTime, &localTime);
-	SYSTEMTIME systemTime;
-	FileTimeToSystemTime(&localTime, &systemTime);
-	_tprintf(TEXT("\t%4d-%02d-%02d %02d:%02d:%02d"),
-	                                               systemTime.wYear, systemTime.wMonth, systemTime.wDay,
-	                                               systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
 	return OK ;
 }
 
@@ -183,7 +171,6 @@ Status SaveProcess(DWORD processID, ElemType& e)
 
 	PROCESS_MEMORY_COUNTERS pmc;
 	GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc));
-	//	_tprintf( TEXT("\t%.1fM\n"), pmc.WorkingSetSize*1.0/1024/1024);
 	e.memorySize = pmc.WorkingSetSize;
 
 	FILETIME tempTime;

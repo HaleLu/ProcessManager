@@ -42,7 +42,6 @@ Status ListInsert(List &L, ElemType e);
 Status ListToView(List& L, CListCtrl &list_ctrl, Status translate(ElemType, CListCtrl&));
 Status print(ElemType e);
 int SaveProcess(DWORD processID, ElemType &e);
-Status printFileTime(FILETIME fileTime);
 
 void GenerateList(List &L);
 void AdjustList(List &L);
