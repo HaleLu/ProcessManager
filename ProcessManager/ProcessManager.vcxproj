@@ -185,6 +185,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Helper.h" />
     <ClInclude Include="ProcessesToList.h" />
     <ClInclude Include="ProcessManager.h" />
     <ClInclude Include="ProcessManagerDlg.h" />
@@ -193,6 +194,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Helper.cpp" />
     <ClCompile Include="ProcessesToList.cpp" />
     <ClCompile Include="ProcessManager.cpp" />
     <ClCompile Include="ProcessManagerDlg.cpp" />

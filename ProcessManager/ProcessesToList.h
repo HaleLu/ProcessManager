@@ -39,10 +39,12 @@ Status CreateList(List &L);
 Status Refresh(List& L);
 int LocateElem(List& L, ElemType e, int compare(ElemType, ElemType));
 Status ListInsert(List &L, ElemType e);
-Status ListTraverse(List& L, Status visit(ElemType));
+Status ListToView(List& L, CListCtrl &list_ctrl, Status translate(ElemType, CListCtrl&));
 Status print(ElemType e);
 int SaveProcess(DWORD processID, ElemType &e);
 Status printFileTime(FILETIME fileTime);
 
 void GenerateList(List &L);
 void AdjustList(List &L);
+
+Status InsertData(ElemType e, CListCtrl &list_ctrl);

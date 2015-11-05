@@ -95,13 +95,13 @@ Status ListInsert(List& L, ElemType e)
 	return OK ;
 }//ListInsert
 
-Status ListTraverse(List& L, Status visit(ElemType))
+Status ListToView(List& L, CListCtrl &list_ctrl, Status translate(ElemType, CListCtrl&))
 {
 	if (L == NULL) exit(HEAD_IS_NULL);
 	List p = L->next;
 	while (p != NULL)
 	{
-		if (visit(p->data) != OK) return VISIT_FAILED ;
+		if (translate(p->data, list_ctrl) != OK) return VISIT_FAILED ;
 		p = p->next;
 	}
 	return OK ;
@@ -197,5 +197,4 @@ void GenerateList(List &L)
 {
 	InitList(L);
 	CreateList(L);
-	ListTraverse(L, print);
 }

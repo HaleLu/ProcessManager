@@ -4,7 +4,9 @@
 #include "stdafx.h"
 #include "ProcessManager.h"
 #include "ProcessManagerDlg.h"
+#include "ProcessesToList.h"
 #include "afxdialogex.h"
+#include "Helper.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -44,14 +46,18 @@ BOOL CProcessManagerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE); // 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	// 创建
+	// 创建List_Running并初始化
 	CRect rect;
 	m_list_running.GetClientRect(&rect);
 	m_list_running.InsertColumn(0, _T("PID"), LVCFMT_CENTER, rect.Width() / 5, IDC_PROCESSID);
 	m_list_running.InsertColumn(1, _T("进程名称"), LVCFMT_CENTER, rect.Width()*2 / 5, IDC_NAME);
 	m_list_running.InsertColumn(2, _T("创建时间"), LVCFMT_CENTER, rect.Width() / 5, IDC_TIME);
 	m_list_running.InsertColumn(3, _T("内存"), LVCFMT_CENTER, rect.Width() / 5, IDC_MEMORY);
-
+	
+	//获取List，依次插入List Control中
+	List L;
+	GenerateList(L);
+	ListToView(L, m_list_running, InsertData);
 
 
 	return TRUE; // 除非将焦点设置到控件，否则返回 TRUE
@@ -91,4 +97,13 @@ void CProcessManagerDlg::OnPaint()
 HCURSOR CProcessManagerDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
+}
+
+Status InsertData(ElemType e, CListCtrl &list_ctrl)
+{
+	Helper helper;
+	char buffer[MAX_PATH];
+	ultoa(e.processID, buffer, 10);
+	list_ctrl.InsertItem(0, helper.CharToWchar(buffer));
+	return OK;
 }
