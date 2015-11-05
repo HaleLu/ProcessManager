@@ -49,10 +49,11 @@ BOOL CProcessManagerDlg::OnInitDialog()
 	// 创建List_Running并初始化
 	CRect rect;
 	m_list_running.GetClientRect(&rect);
-	m_list_running.InsertColumn(0, _T("PID"), LVCFMT_LEFT, 40, IDC_PROCESSID);
-	m_list_running.InsertColumn(1, _T("进程名称"), LVCFMT_LEFT, 150, IDC_NAME);
-	m_list_running.InsertColumn(2, _T("创建时间"), LVCFMT_LEFT, 150, IDC_TIME);
-	m_list_running.InsertColumn(3, _T("内存"), LVCFMT_LEFT, 50, IDC_MEMORY);
+	m_list_running.InsertColumn(IDC_PROCESSID,	_T("PID"),		LVCFMT_LEFT, 40, IDC_PROCESSID);
+	m_list_running.InsertColumn(IDC_NAME,		_T("进程名称"), LVCFMT_LEFT, 180, IDC_NAME);
+	m_list_running.InsertColumn(IDC_STARTTIME,	_T("创建时间"), LVCFMT_LEFT, 120, IDC_STARTTIME);
+	m_list_running.InsertColumn(IDC_RUNNINGTIME,_T("运行时间"), LVCFMT_LEFT, 80, IDC_RUNNINGTIME);
+	m_list_running.InsertColumn(IDC_MEMORY,		_T("内存"),		LVCFMT_LEFT, 60, IDC_MEMORY);
 	
 	//获取List，依次插入List Control中
 	List L;
@@ -103,9 +104,12 @@ Status InsertData(ElemType e, CListCtrl &list_ctrl)
 {
 	Helper helper;
 	char buffer[MAX_PATH];
-	list_ctrl.InsertItem(0, helper.CharToWchar(ultoa(e.processID, buffer, 10)));
-	list_ctrl.SetItemText(0, 1, e.name);
-	list_ctrl.SetItemText(0, 2, helper.FileTimeToWChar(e.creationTime));
-	list_ctrl.SetItemText(0, 3, helper.DoubleToWchar_M((double)e.memorySize/1024/1024));
+	int count = list_ctrl.GetItemCount();
+	list_ctrl.InsertItem(count, NULL);
+	list_ctrl.SetItemText(count, IDC_PROCESSID, helper.CharToWchar(ultoa(e.processID, buffer, 10)));
+	list_ctrl.SetItemText(count, IDC_NAME, e.name);
+	list_ctrl.SetItemText(count, IDC_STARTTIME, helper.FileTimeToWChar(e.creationTime));
+	list_ctrl.SetItemText(count, IDC_RUNNINGTIME, helper.FileTimeToRunningTimeToWChar(e.creationTime));
+	list_ctrl.SetItemText(count, IDC_MEMORY, helper.DoubleToWchar_M((double)e.memorySize/1024/1024));
 	return OK;
 }

@@ -7,8 +7,9 @@
 
 #define IDC_PROCESSID 0
 #define IDC_NAME 1
-#define IDC_TIME 2
-#define IDC_MEMORY 3
+#define IDC_STARTTIME 2
+#define IDC_RUNNINGTIME 3
+#define IDC_MEMORY 4
 
 
 // CProcessManagerDlg ¶Ô»°¿ò
