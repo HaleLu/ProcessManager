@@ -186,6 +186,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Helper.h" />
+    <ClInclude Include="ListHelper.h" />
     <ClInclude Include="ProcessesToList.h" />
     <ClInclude Include="ProcessManager.h" />
     <ClInclude Include="ProcessManagerDlg.h" />
@@ -195,6 +196,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp" />
+    <ClCompile Include="ListHelper.cpp" />
     <ClCompile Include="ProcessesToList.cpp" />
     <ClCompile Include="ProcessManager.cpp" />
     <ClCompile Include="ProcessManagerDlg.cpp" />

@@ -5,7 +5,7 @@
 #include "afxwin.h"
 #include "afxcmn.h"
 
-#include "ProcessesToList.h"
+#include "ListHelper.h"
 #include "Helper.h"
 
 #define IDC_RUNNING_PROCESSID 0
@@ -27,7 +27,7 @@ class CProcessManagerDlg : public CDialogEx
 	// 构造
 public:
 	CProcessManagerDlg(CWnd* pParent = NULL); // 标准构造函数
-
+	~CProcessManagerDlg();
 	// 对话框数据
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_PROCESSMANAGER_DIALOG };
@@ -55,5 +55,6 @@ public:
 	void Refresh();
 
 private:
-	Helper helper;
+	Helper m_helper;
+	ListHelper m_list_helper;
 };

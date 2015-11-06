@@ -20,7 +20,6 @@ Status DestroyList(List& L)
 		p = p->next;
 		free(q);
 	}
-	free(&L);
 	return OK ;
 }//DestroyList
 
@@ -39,68 +38,6 @@ Status CreateRunningList(List& L)
 	{
 		if (SaveProcess(aProcesses[i], tmp_e) == OK)
 			ListInsert(L, tmp_e, cmpMemory);
-	}
-
-	return OK ;
-}
-
-Status RefreshList(List& running_list, List& finished_list)
-{
-	DWORD aProcesses[1024];
-	DWORD cbNeeded;
-	DWORD cProcesses;
-	ElemType tmp_e;
-	DWORD cExitCode;
-
-	//移动running_list里结束的进程至finished_list并将running_list按内存重新排序
-	List p = running_list->next;
-	List q, tmp;
-	while (p != NULL)
-	{
-		Status res = SaveProcess(p->data.processID, tmp_e);
-		if (res == OPEN_PROCESS_FAILED || res == PROCESS_HAS_FINISHED || LocateElem(running_list, tmp_e, cmpIfSame) == 0)
-		{
-			q = p;
-			p = p->next;
-			ListMoveNode(running_list, finished_list, q, ID_FINISH);
-		}
-		else
-		{
-			tmp = p;
-			q = p->pre;
-			p->data.memorySize = tmp_e.memorySize;
-			while (q != running_list && p->data.memorySize > q->data.memorySize)
-			{
-				q = q->pre;
-			}
-			if (q != p->pre)
-			{
-				p->pre->next = p->next;
-				if (p->next) p->next->pre = p->pre;
-				p->pre = q;
-				p->next = q->next;
-				q->next = p;
-				p->next->pre = p;
-			}
-			p = tmp->next;
-		}
-	}
-
-	//比对当前运行的进程，新增进程Insert进running_list
-	unsigned int i;
-	if (!EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) return ENUM_PROCESSES_FAILED;
-	cProcesses = cbNeeded / sizeof(DWORD);
-
-	for (i = 0; i < cProcesses; i++)
-	{
-		if (SaveProcess(aProcesses[i], tmp_e) == OK)
-		{
-			if (LocateElem(running_list, tmp_e, cmpIfSame) == 0)
-			{
-				ListInsert(running_list, tmp_e, cmpMemory);
-			}
-		}
-		
 	}
 
 	return OK ;
@@ -137,7 +74,6 @@ int ListInsert(List& L, ElemType& e, int cmp(ElemType&, ElemType&))
 	return i;
 }//ListInsert
 
-
 Status ListMoveNode(List& from, List& to, LNode* node, int mode)
 {
 	if (mode == ID_FINISH)
@@ -168,18 +104,6 @@ Status ListMoveNode(List& from, List& to, LNode* node, int mode)
 
 	return OK ;
 }//ListMoveNode
-
-Status ListToView(List& L, CListCtrl& list_ctrl, Status translate(ElemType, CListCtrl&))
-{
-	if (L == NULL) exit(HEAD_IS_NULL);
-	List p = L->next;
-	while (p != NULL)
-	{
-		if (translate(p->data, list_ctrl) != OK) return VISIT_FAILED ;
-		p = p->next;
-	}
-	return OK ;
-}//ListTraverse
 
 Status SaveProcess(DWORD processID, ElemType& e)
 {

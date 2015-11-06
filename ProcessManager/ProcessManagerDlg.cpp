@@ -5,7 +5,6 @@
 #include "ProcessManager.h"
 #include "ProcessManagerDlg.h"
 #include "afxdialogex.h"
-#include "Helper.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -20,6 +19,13 @@ CProcessManagerDlg::CProcessManagerDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
+
+CProcessManagerDlg::~CProcessManagerDlg()
+{
+	DestroyList(m_running_list);
+	DestroyList(m_finished_list);
+}
+
 
 void CProcessManagerDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -64,8 +70,8 @@ BOOL CProcessManagerDlg::OnInitDialog()
 	InitList(m_running_list);
 	InitList(m_finished_list);
 	CreateRunningList(m_running_list);
-	ListToView(m_running_list, m_running_list_crtl, InsertRunningData);
-	ListToView(m_finished_list, m_finished_list_crtl, InsertFinishedData);
+	m_list_helper.ListToView(m_running_list, m_running_list_crtl, m_list_helper.InsertRunningData);
+	m_list_helper.ListToView(m_finished_list, m_finished_list_crtl, m_list_helper.InsertFinishedData);
 
 	SetTimer(1, 1000, NULL);
 
@@ -108,50 +114,6 @@ HCURSOR CProcessManagerDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-Status InsertRunningData(ElemType e, CListCtrl& list_ctrl)
-{
-	Helper helper;
-	char buffer[MAX_PATH];
-	int count = list_ctrl.GetItemCount();
-	list_ctrl.InsertItem(count, NULL);
-	list_ctrl.SetItemText(count, IDC_RUNNING_PROCESSID, helper.CharToWchar(ultoa(e.processID, buffer, 10)));
-	list_ctrl.SetItemText(count, IDC_RUNNING_NAME, e.name);
-	list_ctrl.SetItemText(count, IDC_RUNNING_STARTTIME, helper.FileTimeToWChar(e.creationTime));
-	list_ctrl.SetItemText(count, IDC_RUNNING_RUNNINGTIME, helper.FileTimeToRunningTimeToWChar(e.creationTime));
-	list_ctrl.SetItemText(count, IDC_RUNNING_MEMORY, helper.DoubleToWchar_M((double)e.memorySize / 1024 / 1024));
-	return OK ;
-}
-
-int InsertRunningData(ElemType e, int pos, CListCtrl& list_ctrl)
-{
-	Helper helper;
-	char buffer[MAX_PATH];
-	list_ctrl.InsertItem(pos, NULL);
-	list_ctrl.SetItemText(pos, IDC_RUNNING_PROCESSID, helper.CharToWchar(ultoa(e.processID, buffer, 10)));
-	list_ctrl.SetItemText(pos, IDC_RUNNING_NAME, e.name);
-	list_ctrl.SetItemText(pos, IDC_RUNNING_STARTTIME, helper.FileTimeToWChar(e.creationTime));
-	list_ctrl.SetItemText(pos, IDC_RUNNING_RUNNINGTIME, helper.FileTimeToRunningTimeToWChar(e.creationTime));
-	list_ctrl.SetItemText(pos, IDC_RUNNING_MEMORY, helper.DoubleToWchar_M((double)e.memorySize / 1024 / 1024));
-	return OK ;
-}
-
-Status InsertFinishedData(ElemType e, CListCtrl& list_ctrl)
-{
-	Helper helper;
-	char buffer[MAX_PATH];
-
-	SYSTEMTIME cLocalTime;
-	GetLocalTime(&cLocalTime);
-
-	list_ctrl.InsertItem(0, NULL);
-	list_ctrl.SetItemText(0, IDC_FINISHED_PROCESSID, helper.CharToWchar(ultoa(e.processID, buffer, 10)));
-	list_ctrl.SetItemText(0, IDC_FINISHED_NAME, e.name);
-	list_ctrl.SetItemText(0, IDC_FINISHED_STARTTIME, helper.FileTimeToWChar(e.creationTime));
-	list_ctrl.SetItemText(0, IDC_FINISHED_RUNNINGTIME, helper.FileTimeToRunningTimeToWChar(e.creationTime));
-	list_ctrl.SetItemText(0, IDC_FINISHED_FINISHEDTIME, helper.SystemTimeToWChar(cLocalTime));
-	return OK ;
-}
-
 void CProcessManagerDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	Refresh();
@@ -178,7 +140,7 @@ void CProcessManagerDlg::Refresh()
 			p = p->next;
 			ListMoveNode(m_running_list, m_finished_list, q, ID_FINISH);
 			m_running_list_crtl.DeleteItem(i);//??
-			InsertFinishedData(q->data, m_finished_list_crtl);
+			m_list_helper.InsertFinishedData(q->data, m_finished_list_crtl);
 		}
 		else
 		{
@@ -202,12 +164,12 @@ void CProcessManagerDlg::Refresh()
 				p->next = q->next;
 				q->next = p;
 				p->next->pre = p;
-				InsertRunningData(p->data, j, m_running_list_crtl);
+				m_list_helper.InsertRunningData(p->data, j, m_running_list_crtl);
 			} 
 			else
 			{
-				m_running_list_crtl.SetItemText(i, IDC_RUNNING_RUNNINGTIME, helper.FileTimeToRunningTimeToWChar(p->data.creationTime));
-				m_running_list_crtl.SetItemText(i, IDC_RUNNING_MEMORY, helper.DoubleToWchar_M((double)p->data.memorySize / 1024 / 1024));
+				m_running_list_crtl.SetItemText(i, IDC_RUNNING_RUNNINGTIME, m_helper.FileTimeToRunningTimeToWChar(p->data.creationTime));
+				m_running_list_crtl.SetItemText(i, IDC_RUNNING_MEMORY, m_helper.DoubleToWchar_M((double)p->data.memorySize / 1024 / 1024));
 			}
 			
 			p = tmp;
@@ -226,7 +188,7 @@ void CProcessManagerDlg::Refresh()
 		{
 			if (LocateElem(m_running_list, tmp_e, cmpIfSame) == 0)
 			{
-				InsertRunningData(tmp_e, ListInsert(m_running_list, tmp_e, cmpMemory), m_running_list_crtl);
+				m_list_helper.InsertRunningData(tmp_e, ListInsert(m_running_list, tmp_e, cmpMemory), m_running_list_crtl);
 			}
 		}
 	}

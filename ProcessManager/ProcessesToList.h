@@ -46,13 +46,7 @@ Status RefreshList(List&, List&);
 int LocateElem(List& L, ElemType& e, int compare(ElemType&, ElemType&));
 Status ListInsert(List& L, ElemType& e, int cmp(ElemType&, ElemType&));
 Status ListMoveNode(List& from, List& to, LNode* node, int mode);
-Status ListToView(List& L, CListCtrl& list_ctrl, Status translate(ElemType, CListCtrl&));
-Status print(ElemType e);
 int SaveProcess(DWORD processID, ElemType& e);
 
-void AdjustList(List& L);
-Status InsertRunningData(ElemType e, CListCtrl& list_ctrl);
-Status InsertRunningData(ElemType e, int pos, CListCtrl& list_ctrl);
-Status InsertFinishedData(ElemType e, CListCtrl& list_ctrl);
-Status cmpMemory(ElemType& x, ElemType& y);
+int cmpMemory(ElemType& x, ElemType& y);
 int cmpIfSame(ElemType& x, ElemType& y);
