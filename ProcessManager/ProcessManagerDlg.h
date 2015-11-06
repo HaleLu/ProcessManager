@@ -5,9 +5,8 @@
 #include "afxwin.h"
 #include "afxcmn.h"
 
-#ifndef LIST_H
 #include "ProcessesToList.h"
-#endif
+#include "Helper.h"
 
 #define IDC_RUNNING_PROCESSID 0
 #define IDC_RUNNING_NAME 1
@@ -18,7 +17,9 @@
 #define IDC_FINISHED_PROCESSID 0
 #define IDC_FINISHED_NAME 1
 #define IDC_FINISHED_RUNNINGTIME 2
-#define IDC_FINISHED_FINISHEDTIME 3
+#define IDC_FINISHED_STARTTIME 3
+#define IDC_FINISHED_FINISHEDTIME 4
+
 
 // CProcessManagerDlg ¶Ô»°¿ò
 class CProcessManagerDlg : public CDialogEx
@@ -51,5 +52,8 @@ public:
 	List m_running_list;
 	List m_finished_list;
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
-	void ReFresh();
+	void Refresh();
+
+private:
+	Helper helper;
 };

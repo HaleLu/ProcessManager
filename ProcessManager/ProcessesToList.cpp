@@ -118,14 +118,14 @@ int LocateElem(List& L, ElemType& e, int compare(ElemType&, ElemType&))
 	return 0;
 }//LocateElem
 
-Status ListInsert(List& L, ElemType& e, int cmp(ElemType&, ElemType&))
+int ListInsert(List& L, ElemType& e, int cmp(ElemType&, ElemType&))
 {
-	if (&L == NULL) exit(LIST_IS_NULL);
-	if (L == NULL) exit(HEAD_IS_NULL);
+	unsigned int i = 0;
 	List p = L;
 	while (p->next && cmp(e, p->next->data) < 0)
 	{
 		p = p->next;
+		i++;
 	}
 
 	List s = (List)malloc(sizeof(LNode));
@@ -134,7 +134,7 @@ Status ListInsert(List& L, ElemType& e, int cmp(ElemType&, ElemType&))
 	p->next = s;
 	s->pre = p;
 	if (s->next != NULL) s->next->pre = s;
-	return OK ;
+	return i;
 }//ListInsert
 
 

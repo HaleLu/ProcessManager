@@ -1,6 +1,3 @@
-#ifndef LIST_H
-#define LIST_H
-
 #pragma once
 
 #include <windows.h>
@@ -32,7 +29,6 @@ struct ElemType
 	DWORD processID;
 	TCHAR name[MAX_PATH];
 	FILETIME creationTime;
-	FILETIME finishTime;
 	SIZE_T memorySize;
 };
 
@@ -55,10 +51,8 @@ Status print(ElemType e);
 int SaveProcess(DWORD processID, ElemType& e);
 
 void AdjustList(List& L);
-
 Status InsertRunningData(ElemType e, CListCtrl& list_ctrl);
+Status InsertRunningData(ElemType e, int pos, CListCtrl& list_ctrl);
 Status InsertFinishedData(ElemType e, CListCtrl& list_ctrl);
 Status cmpMemory(ElemType& x, ElemType& y);
 int cmpIfSame(ElemType& x, ElemType& y);
-
-#endif 
