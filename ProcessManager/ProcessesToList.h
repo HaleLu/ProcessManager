@@ -1,3 +1,6 @@
+#ifndef LIST_H
+#define LIST_H
+
 #pragma once
 
 #include <windows.h>
@@ -15,35 +18,47 @@
 #define VISIT_FAILED -12	//元素访问失败 
 #define ENUM_PROCESSES_FAILED -20	//枚举当前进程失败 
 #define OPEN_PROCESS_FAILED -21 	//打开进程失败 
+#define PROCESS_HAS_FINISHED -22	//进程已结束
 
 //错误代码 
 #define LIST_IS_NULL -100	//线性表为空
 #define HEAD_IS_NULL -101	//链表为空 
 
-struct ElemType {
+#define ID_FINISH 0
+#define ID_RESTART 1
+
+struct ElemType
+{
 	DWORD processID;
 	TCHAR name[MAX_PATH];
 	FILETIME creationTime;
+	FILETIME finishTime;
 	SIZE_T memorySize;
 };
 
-typedef struct 	LNode {
+typedef struct LNode
+{
 	ElemType data;
-	struct LNode *pre;
-	struct LNode *next;
+	struct LNode* pre;
+	struct LNode* next;
 } LNode, *List;
 
-Status InitList(List &L);
-Status DestroyList(List &L);
-Status CreateList(List &L);
-Status Refresh(List& L);
-int LocateElem(List& L, ElemType e, int compare(ElemType, ElemType));
-Status ListInsert(List &L, ElemType e);
-Status ListToView(List& L, CListCtrl &list_ctrl, Status translate(ElemType, CListCtrl&));
+Status InitList(List& L);
+Status DestroyList(List& L);
+Status CreateRunningList(List& L);
+Status RefreshList(List&, List&);
+int LocateElem(List& L, ElemType& e, int compare(ElemType&, ElemType&));
+Status ListInsert(List& L, ElemType& e, int cmp(ElemType&, ElemType&));
+Status ListMoveNode(List& from, List& to, LNode* node, int mode);
+Status ListToView(List& L, CListCtrl& list_ctrl, Status translate(ElemType, CListCtrl&));
 Status print(ElemType e);
-int SaveProcess(DWORD processID, ElemType &e);
+int SaveProcess(DWORD processID, ElemType& e);
 
-void GenerateList(List &L);
-void AdjustList(List &L);
+void AdjustList(List& L);
 
-Status InsertData(ElemType e, CListCtrl &list_ctrl);
+Status InsertRunningData(ElemType e, CListCtrl& list_ctrl);
+Status InsertFinishedData(ElemType e, CListCtrl& list_ctrl);
+Status cmpMemory(ElemType& x, ElemType& y);
+int cmpIfSame(ElemType& x, ElemType& y);
+
+#endif 

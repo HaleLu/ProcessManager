@@ -55,6 +55,23 @@ wchar_t* Helper::FileTimeToWChar(FILETIME fileTime)
 	return m_wchar;
 }
 
+wchar_t* Helper::SystemTimeToWChar(SYSTEMTIME systemTime)
+{
+	Release();
+	m_char = new char[25];
+	sprintf(m_char, "%04d-%02d-%02d-%02d:%02d:%02d",
+		systemTime.wYear, systemTime.wMonth,
+		systemTime.wDay, systemTime.wHour,
+		systemTime.wMinute, systemTime.wSecond);
+
+	auto len = MultiByteToWideChar(CP_ACP, 0, m_char, strlen(m_char), NULL, 0);
+	m_wchar = new wchar_t[len + 1];
+	MultiByteToWideChar(CP_ACP, 0, m_char, strlen(m_char), m_wchar, len);
+	m_wchar[len] = '\0';
+
+	return m_wchar;
+}
+
 wchar_t* Helper::FileTimeToRunningTimeToWChar(FILETIME fileTime)
 {
 	SYSTEMTIME currentSystemTime;

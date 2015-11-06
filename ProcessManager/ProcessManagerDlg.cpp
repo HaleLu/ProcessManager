@@ -4,7 +4,6 @@
 #include "stdafx.h"
 #include "ProcessManager.h"
 #include "ProcessManagerDlg.h"
-#include "ProcessesToList.h"
 #include "afxdialogex.h"
 #include "Helper.h"
 
@@ -25,12 +24,14 @@ CProcessManagerDlg::CProcessManagerDlg(CWnd* pParent /*=NULL*/)
 void CProcessManagerDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_LIST_RUNNING, m_list_running);
+	DDX_Control(pDX, IDC_LIST_RUNNING, m_running_list_crtl);
+	DDX_Control(pDX, IDC_LIST_FINISHED, m_finished_list_crtl);
 }
 
 BEGIN_MESSAGE_MAP(CProcessManagerDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_WM_TIMER()
 	END_MESSAGE_MAP()
 
 
@@ -46,20 +47,26 @@ BOOL CProcessManagerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE); // 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	// 创建List_Running并初始化
-	CRect rect;
-	m_list_running.GetClientRect(&rect);
-	m_list_running.InsertColumn(IDC_PROCESSID,	_T("PID"),		LVCFMT_LEFT, 40, IDC_PROCESSID);
-	m_list_running.InsertColumn(IDC_NAME,		_T("进程名称"), LVCFMT_LEFT, 180, IDC_NAME);
-	m_list_running.InsertColumn(IDC_STARTTIME,	_T("创建时间"), LVCFMT_LEFT, 120, IDC_STARTTIME);
-	m_list_running.InsertColumn(IDC_RUNNINGTIME,_T("运行时间"), LVCFMT_LEFT, 80, IDC_RUNNINGTIME);
-	m_list_running.InsertColumn(IDC_MEMORY,		_T("内存"),		LVCFMT_LEFT, 60, IDC_MEMORY);
-	
-	//获取List，依次插入List Control中
-	List L;
-	GenerateList(L);
-	ListToView(L, m_list_running, InsertData);
+	// 创建List Control并初始化
+	m_running_list_crtl.InsertColumn(IDC_RUNNING_PROCESSID, _T("PID"), LVCFMT_LEFT, 40, IDC_RUNNING_PROCESSID);
+	m_running_list_crtl.InsertColumn(IDC_RUNNING_NAME, _T("进程名称"), LVCFMT_LEFT, 180, IDC_RUNNING_NAME);
+	m_running_list_crtl.InsertColumn(IDC_RUNNING_STARTTIME, _T("创建时间"), LVCFMT_LEFT, 120, IDC_RUNNING_STARTTIME);
+	m_running_list_crtl.InsertColumn(IDC_RUNNING_RUNNINGTIME, _T("持续时间"), LVCFMT_LEFT, 80, IDC_RUNNING_RUNNINGTIME);
+	m_running_list_crtl.InsertColumn(IDC_RUNNING_MEMORY, _T("内存"), LVCFMT_LEFT, 60, IDC_RUNNING_MEMORY);
 
+	m_finished_list_crtl.InsertColumn(IDC_FINISHED_PROCESSID, _T("PID"), LVCFMT_LEFT, 40, IDC_FINISHED_PROCESSID);
+	m_finished_list_crtl.InsertColumn(IDC_FINISHED_NAME, _T("进程名称"), LVCFMT_LEFT, 180, IDC_FINISHED_NAME);
+	m_finished_list_crtl.InsertColumn(IDC_FINISHED_RUNNINGTIME, _T("持续时间"), LVCFMT_LEFT, 80, IDC_FINISHED_RUNNINGTIME);
+	m_finished_list_crtl.InsertColumn(IDC_FINISHED_FINISHEDTIME, _T("结束时间"), LVCFMT_LEFT, 120, IDC_FINISHED_FINISHEDTIME);
+
+	//获取List，依次插入List Control中
+	InitList(m_running_list);
+	InitList(m_finished_list);
+	CreateRunningList(m_running_list);
+	ListToView(m_running_list, m_running_list_crtl, InsertRunningData);
+	ListToView(m_finished_list, m_finished_list_crtl, InsertFinishedData);
+
+	SetTimer(1, 1000, NULL);
 
 	return TRUE; // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -100,16 +107,50 @@ HCURSOR CProcessManagerDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-Status InsertData(ElemType e, CListCtrl &list_ctrl)
+Status InsertRunningData(ElemType e, CListCtrl& list_ctrl)
 {
 	Helper helper;
 	char buffer[MAX_PATH];
 	int count = list_ctrl.GetItemCount();
 	list_ctrl.InsertItem(count, NULL);
-	list_ctrl.SetItemText(count, IDC_PROCESSID, helper.CharToWchar(ultoa(e.processID, buffer, 10)));
-	list_ctrl.SetItemText(count, IDC_NAME, e.name);
-	list_ctrl.SetItemText(count, IDC_STARTTIME, helper.FileTimeToWChar(e.creationTime));
-	list_ctrl.SetItemText(count, IDC_RUNNINGTIME, helper.FileTimeToRunningTimeToWChar(e.creationTime));
-	list_ctrl.SetItemText(count, IDC_MEMORY, helper.DoubleToWchar_M((double)e.memorySize/1024/1024));
-	return OK;
+	list_ctrl.SetItemText(count, IDC_RUNNING_PROCESSID, helper.CharToWchar(ultoa(e.processID, buffer, 10)));
+	list_ctrl.SetItemText(count, IDC_RUNNING_NAME, e.name);
+	list_ctrl.SetItemText(count, IDC_RUNNING_STARTTIME, helper.FileTimeToWChar(e.creationTime));
+	list_ctrl.SetItemText(count, IDC_RUNNING_RUNNINGTIME, helper.FileTimeToRunningTimeToWChar(e.creationTime));
+	list_ctrl.SetItemText(count, IDC_RUNNING_MEMORY, helper.DoubleToWchar_M((double)e.memorySize / 1024 / 1024));
+	return OK ;
+}
+
+Status InsertFinishedData(ElemType e, CListCtrl& list_ctrl)
+{
+	Helper helper;
+	char buffer[MAX_PATH];
+	int count = list_ctrl.GetItemCount();
+
+	SYSTEMTIME cLocalTime;
+	GetLocalTime(&cLocalTime);
+
+	list_ctrl.InsertItem(count, NULL);
+	list_ctrl.SetItemText(count, IDC_FINISHED_PROCESSID, helper.CharToWchar(ultoa(e.processID, buffer, 10)));
+	list_ctrl.SetItemText(count, IDC_FINISHED_NAME, e.name);
+	list_ctrl.SetItemText(count, IDC_FINISHED_RUNNINGTIME, helper.FileTimeToRunningTimeToWChar(e.creationTime));
+	list_ctrl.SetItemText(count, IDC_FINISHED_FINISHEDTIME, helper.SystemTimeToWChar(cLocalTime));
+	return OK ;
+}
+
+void CProcessManagerDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	ReFresh();
+	CDialogEx::OnTimer(nIDEvent);
+}
+
+void CProcessManagerDlg::ReFresh()
+{
+	RefreshList(m_running_list, m_finished_list);
+
+	m_running_list_crtl.DeleteAllItems();
+	m_finished_list_crtl.DeleteAllItems();
+	ListToView(m_running_list, m_running_list_crtl, InsertRunningData);
+	ListToView(m_finished_list, m_finished_list_crtl, InsertFinishedData);
+	
 }
