@@ -44,7 +44,7 @@ Status DestroyList(List& L);
 Status CreateRunningList(List& L);
 Status RefreshList(List&, List&);
 int LocateElem(List& L, ElemType& e, int compare(ElemType&, ElemType&));
-Status ListInsert(List& L, ElemType& e, int cmp(ElemType&, ElemType&));
+int ListInsert(List& L, ElemType& e, int cmp(ElemType&, ElemType&));
 Status ListMoveNode(List& from, List& to, LNode* node, int mode);
 int SaveProcess(DWORD processID, ElemType& e);
 
