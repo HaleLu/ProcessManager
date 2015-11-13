@@ -5,20 +5,19 @@
 #include "afxwin.h"
 #include "afxcmn.h"
 
-#include "ListHelper.h"
 #include "Helper.h"
+#include "ListHelper.h"
 
-#define IDC_RUNNING_PROCESSID 0
-#define IDC_RUNNING_NAME 1
-#define IDC_RUNNING_STARTTIME 2
-#define IDC_RUNNING_RUNNINGTIME 3
-#define IDC_RUNNING_MEMORY 4
 
-#define IDC_FINISHED_PROCESSID 0
-#define IDC_FINISHED_NAME 1
-#define IDC_FINISHED_RUNNINGTIME 2
-#define IDC_FINISHED_STARTTIME 3
-#define IDC_FINISHED_FINISHEDTIME 4
+#define IDC_RUNNING_NAME 0
+#define IDC_RUNNING_STARTTIME 1
+#define IDC_RUNNING_RUNNINGTIME 2
+#define IDC_RUNNING_MEMORY 3
+
+#define IDC_FINISHED_NAME 0
+#define IDC_FINISHED_RUNNINGTIME 1
+#define IDC_FINISHED_STARTTIME 2
+#define IDC_FINISHED_FINISHEDTIME 3
 
 
 // CProcessManagerDlg ¶Ô»°¿ò
@@ -49,8 +48,8 @@ protected:
 public:
 	CListCtrl m_running_list_crtl;
 	CListCtrl m_finished_list_crtl;
-	List m_running_list;
-	List m_finished_list;
+	DuLinkList m_running_list;
+	LinkList m_finished_list;
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	void Refresh();
 

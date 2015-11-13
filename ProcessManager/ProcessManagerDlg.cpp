@@ -22,8 +22,8 @@ CProcessManagerDlg::CProcessManagerDlg(CWnd* pParent /*=NULL*/)
 
 CProcessManagerDlg::~CProcessManagerDlg()
 {
-	DestroyList(m_running_list);
-	DestroyList(m_finished_list);
+	DestroyList_Du(m_running_list);
+	DestroyList_L(m_finished_list);
 }
 
 
@@ -52,24 +52,21 @@ BOOL CProcessManagerDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE); // 设置大图标
 	SetIcon(m_hIcon, FALSE); // 设置小图标
 
-	// TODO: 在此添加额外的初始化代码
 	// 创建List Control并初始化
-	m_running_list_crtl.InsertColumn(IDC_RUNNING_PROCESSID, _T("PID"), LVCFMT_LEFT, 40, IDC_RUNNING_PROCESSID);
 	m_running_list_crtl.InsertColumn(IDC_RUNNING_NAME, _T("进程名称"), LVCFMT_LEFT, 180, IDC_RUNNING_NAME);
-	m_running_list_crtl.InsertColumn(IDC_RUNNING_STARTTIME, _T("创建时间"), LVCFMT_LEFT, 120, IDC_RUNNING_STARTTIME);
-	m_running_list_crtl.InsertColumn(IDC_RUNNING_RUNNINGTIME, _T("持续时间"), LVCFMT_LEFT, 80, IDC_RUNNING_RUNNINGTIME);
-	m_running_list_crtl.InsertColumn(IDC_RUNNING_MEMORY, _T("内存"), LVCFMT_LEFT, 60, IDC_RUNNING_MEMORY);
+	m_running_list_crtl.InsertColumn(IDC_RUNNING_STARTTIME, _T("最近的打开时间"), LVCFMT_LEFT, 120, IDC_RUNNING_STARTTIME);
+	m_running_list_crtl.InsertColumn(IDC_RUNNING_RUNNINGTIME, _T("总持续时间"), LVCFMT_LEFT, 80, IDC_RUNNING_RUNNINGTIME);
+	m_running_list_crtl.InsertColumn(IDC_RUNNING_MEMORY, _T("占用内存"), LVCFMT_LEFT, 60, IDC_RUNNING_MEMORY);
 
-	m_finished_list_crtl.InsertColumn(IDC_FINISHED_PROCESSID, _T("PID"), LVCFMT_LEFT, 40, IDC_FINISHED_PROCESSID);
 	m_finished_list_crtl.InsertColumn(IDC_FINISHED_NAME, _T("进程名称"), LVCFMT_LEFT, 180, IDC_FINISHED_NAME);
-	m_finished_list_crtl.InsertColumn(IDC_FINISHED_RUNNINGTIME, _T("持续时间"), LVCFMT_LEFT, 80, IDC_FINISHED_RUNNINGTIME);
-	m_finished_list_crtl.InsertColumn(IDC_FINISHED_STARTTIME, _T("创建时间"), LVCFMT_LEFT, 120, IDC_RUNNING_STARTTIME);
-	m_finished_list_crtl.InsertColumn(IDC_FINISHED_FINISHEDTIME, _T("结束时间"), LVCFMT_LEFT, 120, IDC_FINISHED_FINISHEDTIME);
+	m_finished_list_crtl.InsertColumn(IDC_FINISHED_RUNNINGTIME, _T("总持续时间"), LVCFMT_LEFT, 80, IDC_FINISHED_RUNNINGTIME);
+	m_finished_list_crtl.InsertColumn(IDC_FINISHED_STARTTIME, _T("最近的创建时间"), LVCFMT_LEFT, 120, IDC_RUNNING_STARTTIME);
+	m_finished_list_crtl.InsertColumn(IDC_FINISHED_FINISHEDTIME, _T("最近的结束时间"), LVCFMT_LEFT, 120, IDC_FINISHED_FINISHEDTIME);
 
 	//获取List，依次插入List Control中
-	InitList(m_running_list);
-	InitList(m_finished_list);
-	CreateRunningList(m_running_list);
+	InitList_Du(m_running_list);
+	InitList_L(m_finished_list);
+	CreateRunningList_Du(m_running_list);
 	m_list_helper.ListToView(m_running_list, m_running_list_crtl, m_list_helper.InsertRunningData);
 	m_list_helper.ListToView(m_finished_list, m_finished_list_crtl, m_list_helper.InsertFinishedData);
 
@@ -126,70 +123,124 @@ void CProcessManagerDlg::Refresh()
 	DWORD cbNeeded;
 	DWORD cProcesses;
 	ElemType tmp_e;
+	DuLinkList p;
 
-	//移动running_list里结束的进程至finished_list并将running_list按内存重新排序
-	List p = m_running_list->next;
-	List q, tmp;
-	unsigned int i = 0, j;
-	while (p != NULL)
+	//初始化flag标记
+	p = m_running_list->next;
+	while (p)
 	{
-		Status res = SaveProcess(p->data.processID, tmp_e);
-		if (res == OPEN_PROCESS_FAILED || res == PROCESS_HAS_FINISHED || LocateElem(m_running_list, tmp_e, cmpIfSame) == 0)
-		{
-			q = p;
-			p = p->next;
-			ListMoveNode(m_running_list, m_finished_list, q, ID_FINISH);
-			m_running_list_crtl.DeleteItem(i);//??
-			m_list_helper.InsertFinishedData(q->data, m_finished_list_crtl);
-		}
-		else
-		{
-			tmp = p->next;
-			q = p->pre;
-			j = i;
-			p->data.memorySize = tmp_e.memorySize;
-			while (q != m_running_list && p->data.memorySize > q->data.memorySize)
-			{
-				q = q->pre;
-				j--;
-			}
-			
-			if (q != p->pre)
-			{
-				p->pre->next = p->next;
-				if (p->next) p->next->pre = p->pre;
-				m_running_list_crtl.DeleteItem(i);//??
-
-				p->pre = q;
-				p->next = q->next;
-				q->next = p;
-				p->next->pre = p;
-				m_list_helper.InsertRunningData(p->data, j, m_running_list_crtl);
-			} 
-			else
-			{
-				m_running_list_crtl.SetItemText(i, IDC_RUNNING_RUNNINGTIME, m_helper.FileTimeToRunningTimeToWChar(p->data.creationTime));
-				m_running_list_crtl.SetItemText(i, IDC_RUNNING_MEMORY, m_helper.DoubleToWchar_M((double)p->data.memorySize / 1024 / 1024));
-			}
-			
-			p = tmp;
-			i++;
-		}
-		CString x = m_running_list_crtl.GetItemText(i, 0);
+		p->flag = false;
+		p = p->next;
 	}
 
-	//比对当前运行的进程，新增进程Insert进running_list
+	//比对当前运行的进程，新增进程与finished_list比对，若无则Insert进running_list，若有则更新后移动进running_list
 	if (!EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) return;
 	cProcesses = cbNeeded / sizeof(DWORD);
 
-	for (i = 0; i < cProcesses; i++)
+	for (int i = 0; i < cProcesses; i++)
 	{
 		if (SaveProcess(aProcesses[i], tmp_e) == OK)
 		{
-			if (LocateElem(m_running_list, tmp_e, cmpIfSame) == 0)
+			int pos_running;
+			DuLinkList running_node = LocateElem_Du(m_running_list, tmp_e, cmpName, &pos_running);
+			if (running_node == NULL)
+			{	
+				//此进程是新建的
+
+				int pos_finished;
+				LinkList finished_node = LocateElem_L(m_finished_list, tmp_e, cmpName, &pos_finished);
+				if (finished_node == NULL)
+				{
+					//此进程是第一次被运行，加入running_list并更新界面
+
+					m_list_helper.InsertRunningData(tmp_e, SortedListInsert_Du(m_running_list, tmp_e, cmpMemory), m_running_list_crtl);
+				}
+				else
+				{
+					//此进程已运行过，从finished_list中移出至running_list
+
+					finished_node->next->data.memorySize = tmp_e.memorySize;
+					finished_node->next->data.creationTime = tmp_e.creationTime;
+
+					int pos;
+					DuLinkList node = (DuLinkList)ListMoveNode_Du(m_running_list, finished_node, ID_RESTART, &pos);
+					m_list_helper.InsertRunningData(node->data, pos, m_running_list_crtl);
+					m_finished_list_crtl.DeleteItem(pos_finished);
+				}
+			}
+			else
 			{
-				m_list_helper.InsertRunningData(tmp_e, ListInsert(m_running_list, tmp_e, cmpMemory), m_running_list_crtl);
+				//此进程正在运行
+
+				if (running_node->flag)
+				{
+					//此进程已更新过
+
+					running_node->data.memorySize += tmp_e.memorySize;
+					if (CompareFileTime(&running_node->data.creationTime, &tmp_e.creationTime) < 0)
+					{
+						memcpy(&running_node->data.creationTime, &tmp_e.creationTime, sizeof(FILETIME));
+					}
+				}
+				else
+				{
+					//此进程未被更新
+
+					running_node->flag = true;
+					running_node->data.memorySize = tmp_e.memorySize;
+					running_node->data.processID = tmp_e.processID;
+				}
+
+				//冒泡排序并更新界面
+
+				DuLinkList q = running_node->pre;
+				int to = pos_running;
+				while (q != m_running_list && running_node->data.memorySize > q->data.memorySize)
+				{
+					q = q->pre;
+					to--;
+				}
+
+				if (q != running_node->pre)
+				{
+					running_node->pre->next = running_node->next;
+					if (running_node->next) running_node->next->pre = running_node->pre;
+					m_running_list_crtl.DeleteItem(pos_running);
+
+					running_node->pre = q;
+					running_node->next = q->next;
+					q->next = running_node;
+					running_node->next->pre = running_node;
+					m_list_helper.InsertRunningData(running_node->data, to, m_running_list_crtl);
+				}
+				else
+				{
+					m_running_list_crtl.SetItemText(pos_running, IDC_RUNNING_STARTTIME, m_helper.FileTimeToWChar(running_node->data.creationTime));
+					m_running_list_crtl.SetItemText(pos_running, IDC_RUNNING_RUNNINGTIME, m_helper.FileTimeAddToRunningTimeToWChar(running_node->data.creationTime, running_node->data.runningTime));
+					m_running_list_crtl.SetItemText(pos_running, IDC_RUNNING_MEMORY, m_helper.DoubleToWchar_M((double)running_node->data.memorySize / 1024 / 1024));
+				}
+				
 			}
 		}
 	}
+
+	DuLinkList q;
+	int tmp;
+	int i = 0;
+	p = m_running_list->next;
+	while (p)
+	{
+		q = p->next;
+		if (!p->flag)
+		{
+			//进程已结束，移动至finished_list并更新界面
+			
+			LinkList to = (LinkList)ListMoveNode_Du(p, m_finished_list, ID_FINISH, &tmp);
+			m_running_list_crtl.DeleteItem(i);
+			m_list_helper.InsertFinishedData(to->data, m_finished_list_crtl);
+		}
+		p = q;
+		i++;
+	}
+
 }

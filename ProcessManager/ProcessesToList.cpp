@@ -1,19 +1,20 @@
 #include "stdafx.h"
 #include "ProcessesToList.h"
+#include "Helper.h"
 
-Status InitList(List& L)
+Status InitList_Du(DuLinkList& L)
 {
-	L = (List)malloc(sizeof(LNode));
+	L = (DuLinkList)malloc(sizeof(DuLNode));
 	memset((L), 0, sizeof(*L));
 	return OK ;
-}//InitList
+}//InitList_Du
 
-Status DestroyList(List& L)
+Status DestroyList_Du(DuLinkList& L)
 {
 	if (&L == NULL) exit(LIST_IS_NULL);
 	if (L == NULL) exit(HEAD_IS_NULL);
-	List p = L;
-	List q;
+	DuLinkList p = L;
+	DuLinkList q;
 	while (p != NULL)
 	{
 		q = p;
@@ -21,9 +22,9 @@ Status DestroyList(List& L)
 		free(q);
 	}
 	return OK ;
-}//DestroyList
+}//DestroyList_Du
 
-Status CreateRunningList(List& L)
+Status CreateRunningList_Du(DuLinkList& L)
 {
 	DWORD aProcesses[1024];
 	DWORD cbNeeded;
@@ -37,73 +38,119 @@ Status CreateRunningList(List& L)
 	for (i = 0; i < cProcesses; i++)
 	{
 		if (SaveProcess(aProcesses[i], tmp_e) == OK)
-			ListInsert(L, tmp_e, cmpMemory);
+			SortedListInsert_Du(L, tmp_e, cmpMemory);
 	}
 
 	return OK ;
 }
 
-int LocateElem(List& L, ElemType& e, int compare(ElemType&, ElemType&))
+DuLinkList LocateElem_Du(DuLinkList& L, ElemType& e, int compare(ElemType&, ElemType&), int *pos)
 {
-	int i;
-	List p = L->next;
-	for (i = 1; p != NULL; i++ , p = p->next)
+	DuLinkList p = L->next;
+	int i = 0;
+	for (; p != NULL; i++, p = p->next)
 	{
-		if (compare(p->data, e) == 0) 
-			return i;
+		if (compare(p->data, e) == 0)
+		{
+			*pos = i;
+			return p;
+		}
+			
 	}
-	return 0;
-}//LocateElem
+	return NULL;
+}//LocateElem_Du
 
-int ListInsert(List& L, ElemType& e, int cmp(ElemType&, ElemType&))
+int SortedListInsert_Du(DuLinkList& L, ElemType& e, int cmp(ElemType&, ElemType&))
 {
 	unsigned int i = 0;
-	List p = L;
+	DuLinkList p;
+	int tmp;
+	p = LocateElem_Du(L, e, cmpName, &tmp);
+	if (p != NULL)
+	{
+		if (CompareFileTime(&e.creationTime, &p->data.creationTime) < 0)
+		{
+			memcpy(&p->data.creationTime, &e.creationTime, sizeof(FILETIME));
+		}
+		p->data.memorySize += e.memorySize;
+		//根据p中进程内存的大小调整p的位置
+		DuLinkList q = p->pre;
+		while (q != L && p->data.memorySize > q->data.memorySize)
+		{
+			q = q->pre;
+		}
+
+		if (q != p->pre)
+		{
+			p->pre->next = p->next;
+			if (p->next) p->next->pre = p->pre;
+			p->pre = q;
+			p->next = q->next;
+			q->next = p;
+			p->next->pre = p;
+		}
+		return 0;
+	}
+
+	p = L;
 	while (p->next && cmp(e, p->next->data) < 0)
 	{
 		p = p->next;
 		i++;
 	}
 
-	List s = (List)malloc(sizeof(LNode));
+	DuLinkList s = (DuLinkList)malloc(sizeof(DuLNode));
 	memcpy(&s->data, &e, sizeof(ElemType));
 	s->next = p->next;
 	p->next = s;
 	s->pre = p;
 	if (s->next != NULL) s->next->pre = s;
 	return i;
-}//ListInsert
+}//SortedListInsert_Du
 
-Status ListMoveNode(List& from, List& to, LNode* node, int mode)
+void* ListMoveNode_Du(DuLinkList& running_node, LinkList& finished_node, int mode, int* pos)
 {
 	if (mode == ID_FINISH)
 	{
-		node->pre->next = node->next;
-		if (node->next != NULL)node->next->pre = node->pre;
-		node->pre = to;
-		node->next = to->next;
-		to->next = node;
-		if (node->next != NULL) node->next->pre = node;
+		Helper helper;
+		running_node->pre->next = running_node->next;
+		if (running_node->next != NULL)running_node->next->pre = running_node->pre;
+		LinkList to = (LinkList)malloc(sizeof(LNode));
+		memcpy(&to->data, &running_node->data, sizeof(ElemType));
+		helper.FileTimeAddRunningTime(&to->data.runningTime, to->data.creationTime);
+		free(running_node);
+
+		to->next = finished_node->next;
+		finished_node->next = to;
+		return to;
 	}
 
 	if (mode == ID_RESTART)
 	{
-		node->pre->next = node->next;
-		if (node->next != NULL)node->next->pre = node->pre;
-		List p = to;
-		while (p->next && cmpMemory(node->data, p->next->data) < 0)
+		LinkList toDelete = finished_node->next;
+		finished_node->next = toDelete->next;
+
+		DuLinkList p = running_node;
+		int i = 0;
+		while (p->next && cmpMemory(toDelete->data, p->next->data) < 0)
 		{
 			p = p->next;
+			i++;
 		}
+		DuLinkList to = (DuLinkList)malloc(sizeof(DuLNode));
+		memcpy(&to->data, &toDelete->data, sizeof(ElemType));
+		free(toDelete);
 
-		node->next = p->next;
-		p->next = node;
-		node->pre = p;
-		if (node->next != NULL) node->next->pre = node;
+		to->next = p->next;
+		p->next = to;
+		to->pre = p;
+		if (to->next != NULL) to->next->pre = to;
+		*pos = i;
+		return to;
 	}
 
-	return OK ;
-}//ListMoveNode
+	return NULL ;
+}//ListMoveNode_Du
 
 Status SaveProcess(DWORD processID, ElemType& e)
 {
@@ -112,8 +159,8 @@ Status SaveProcess(DWORD processID, ElemType& e)
 	DWORD cbNeeded;
 	DWORD cExitCode;
 	e.processID = processID;
-
 	e.memorySize = 0;
+	memset(&e.runningTime, 0, sizeof(FILETIME));
 
 	hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processID);
 	if (NULL == hProcess) return OPEN_PROCESS_FAILED ;
@@ -151,3 +198,53 @@ int cmpIfSame(ElemType& x, ElemType& y)
 	if (x.processID == y.processID && CompareFileTime(&x.creationTime, &y.creationTime) == 0) return 0;
 	return -1;
 }
+
+int cmpName(ElemType& x, ElemType& y)
+{
+	Helper helper;
+	char x_name[MAX_PATH];
+	char y_name[MAX_PATH];
+	strcpy(x_name, helper.WcharToChar(x.name));
+	strcpy(y_name, helper.WcharToChar(y.name));
+	if (strcmp(x_name, y_name) == 0)
+		return 0;
+	return -1;
+}
+
+
+Status InitList_L(LinkList& L)
+{
+	L = (LinkList)malloc(sizeof(LNode));
+	memset((L), 0, sizeof(*L));
+	return OK;
+}//InitList_L
+
+Status DestroyList_L(LinkList& L)
+{
+	if (&L == NULL) exit(LIST_IS_NULL);
+	if (L == NULL) exit(HEAD_IS_NULL);
+	LinkList p = L;
+	LinkList q;
+	while (p != NULL)
+	{
+		q = p;
+		p = p->next;
+		free(q);
+	}
+	return OK;
+}//DestroyList_L
+
+LinkList LocateElem_L(LinkList& L, ElemType& e, int compare(ElemType&, ElemType&), int *pos)
+{
+	LinkList p = L;
+	int i = 0;
+	for (; p->next != NULL; i++, p = p->next)
+	{
+		if (compare(p->next->data, e) == 0)
+		{
+			*pos = i;
+			return p;
+		}
+	}
+	return NULL;
+}//LocateElem_L

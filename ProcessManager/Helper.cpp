@@ -42,7 +42,7 @@ wchar_t* Helper::FileTimeToWChar(FILETIME fileTime)
 
 	Release();
 	m_char = new char[25];
-	sprintf(m_char, "%04d-%02d-%02d-%02d:%02d:%02d",
+	sprintf(m_char, "%04d-%02d-%02d %02d:%02d:%02d",
 		systemTime.wYear, systemTime.wMonth,
 		systemTime.wDay, systemTime.wHour,
 		systemTime.wMinute, systemTime.wSecond);
@@ -72,7 +72,7 @@ wchar_t* Helper::SystemTimeToWChar(SYSTEMTIME systemTime)
 	return m_wchar;
 }
 
-wchar_t* Helper::FileTimeToRunningTimeToWChar(FILETIME fileTime)
+wchar_t* Helper::FileTimeAddToRunningTimeToWChar(FILETIME fileTime, FILETIME runningTime_base)
 {
 	SYSTEMTIME currentSystemTime;
 	GetSystemTime(&currentSystemTime);
@@ -92,6 +92,10 @@ wchar_t* Helper::FileTimeToRunningTimeToWChar(FILETIME fileTime)
 		runningTime.dwLowDateTime = currentTime.dwLowDateTime - fileTime.dwLowDateTime;
 	}
 
+	runningTime.dwLowDateTime += runningTime_base.dwLowDateTime;
+	runningTime.dwHighDateTime += runningTime_base.dwHighDateTime;
+	if (runningTime.dwLowDateTime < runningTime_base.dwLowDateTime) runningTime.dwHighDateTime++;
+
 	SYSTEMTIME systemTime;
 	FileTimeToSystemTime(&runningTime, &systemTime);
 	
@@ -107,6 +111,32 @@ wchar_t* Helper::FileTimeToRunningTimeToWChar(FILETIME fileTime)
 	m_wchar[len] = '\0';
 
 	return m_wchar;
+}
+
+void Helper::FileTimeAddRunningTime(FILETIME* p_runningTime, FILETIME fileTime)
+{
+	SYSTEMTIME currentSystemTime;
+	GetSystemTime(&currentSystemTime);
+	FILETIME currentTime;
+	SystemTimeToFileTime(&currentSystemTime, &currentTime);
+
+	FILETIME runningTime;
+
+	if (currentTime.dwLowDateTime > fileTime.dwLowDateTime)
+	{
+		runningTime.dwHighDateTime = currentTime.dwHighDateTime - fileTime.dwHighDateTime;
+		runningTime.dwLowDateTime = currentTime.dwLowDateTime - fileTime.dwLowDateTime;
+	}
+	else
+	{
+		runningTime.dwHighDateTime = currentTime.dwHighDateTime - fileTime.dwHighDateTime - 1;
+		runningTime.dwLowDateTime = currentTime.dwLowDateTime - fileTime.dwLowDateTime;
+	}
+
+	p_runningTime->dwLowDateTime += runningTime.dwLowDateTime;
+	p_runningTime->dwHighDateTime += runningTime.dwHighDateTime;
+	if (p_runningTime->dwLowDateTime < runningTime.dwLowDateTime) p_runningTime->dwHighDateTime++;
+
 }
 
 wchar_t* Helper::DoubleToWchar_M(double size_x)
